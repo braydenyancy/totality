@@ -6,7 +6,10 @@
   "plugins": [
     {
       "name": "totality",
-      "source": ".",
+      "source": {
+        "source": "github",
+        "repo": "braydenyancy/totality"
+      },
       "description": "Orchestrator pack: dispatches focused agents (R&D today; executor and librarian later) and gates dependencies via a built-in doctor."
     }
   ]
