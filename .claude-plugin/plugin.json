@@ -1,0 +1,10 @@
+{
+  "name": "totality",
+  "description": "Orchestrator pack for Claude Code: dispatches focused agents (R&D today, executor and librarian later) and gates dependencies via a built-in doctor. Ships with a curated stack of plugins.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Brayden Yancy"
+  },
+  "homepage": "https://github.com/braydenyancy/totality",
+  "repository": "https://github.com/braydenyancy/totality"
+}

@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -d knowledge ]; then count=$(find knowledge -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l | tr -d ' '); if [ \"$count\" -gt 0 ]; then echo \"[totality] $count in-progress feature(s) in knowledge/. Run /totality to resume or /totality:doctor for a health check.\"; fi; fi"
+          }
+        ]
+      }
+    ]
+  }
+}

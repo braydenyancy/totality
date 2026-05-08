@@ -1,0 +1,13 @@
+{
+  "name": "totality",
+  "owner": {
+    "name": "Brayden Yancy"
+  },
+  "plugins": [
+    {
+      "name": "totality",
+      "source": ".",
+      "description": "Orchestrator pack: dispatches focused agents (R&D today; executor and librarian later) and gates dependencies via a built-in doctor."
+    }
+  ]
+}
