@@ -16,8 +16,10 @@ Execute these phases in order. Stay resident across the whole session: when an a
 
 Invoke the doctor skill via the Skill tool: `skill: doctor`. Wait for it to return.
 
-- **All checks pass** → continue to Phase 2.
-- **Anything fails** → halt the loop. The doctor skill is responsible for surfacing install/update commands and prompting the user. Do not bypass.
+**Show the full doctor report verbatim** — every required plugin, recommended plugin, external tool, and self-check line. Do not summarize it as "Doctor: PASS" or similar; the user must see what was actually probed. After the report, on a separate line, state the gate decision (PASS / PASS-with-warnings / HALT).
+
+- **All hard checks pass** → continue to Phase 2.
+- **Anything hard fails** → halt the loop. The doctor skill is responsible for surfacing install/update commands and prompting the user. Do not bypass.
 
 ### Phase 2 — Intent Inference
 
@@ -78,6 +80,7 @@ If the user picks a follow-up that maps to an agent, return to Phase 3 with the 
 ## Rules
 
 - **Doctor first, always.** Never dispatch an agent before doctor has signed off in this session.
+- **Show doctor's full output.** Never collapse the doctor report to a single line. The user needs to see every plugin and tool that was checked.
 - **Never do the work yourself.** You orchestrate. If you find yourself reading code or writing to `knowledge/`, you've drifted out of role.
 - **One agent at a time.** Wait for return before dispatching the next.
 - **Re-enter the loop on return.** Don't let control fall out after one dispatch — assess and offer the next step.

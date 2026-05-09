@@ -7,18 +7,19 @@ description: Health check for the totality plugin pack. Verifies required plugin
 
 Verify the totality stack is ready to work. Halt with actionable instructions when anything fails.
 
-## Modes
+## Transparency rule
 
-- **Standalone** (`/totality:doctor`) — print a full report. Pass or fail, surface every check result.
-- **Internal** (called by `/totality`) — silent on success, verbose only on failure.
+**Always print the full report**, regardless of how doctor was invoked. Every plugin in the matrix gets a line — pass, warn, or fail — so the user can see what was checked. Silent passes are forbidden: a check that wasn't reported is a check that wasn't run.
 
-Detect mode by checking whether you were invoked directly or via the Skill tool from another skill. When in doubt, default to standalone (verbose) — extra output is cheaper than silent failures.
+This applies whether doctor is run standalone (`/totality:doctor`) or called internally by `/totality`. The orchestrator must not suppress, summarize, or replace the report — it should appear verbatim before any next-phase action.
 
 ## Checks (in order)
 
+You must execute **every** numbered check below and emit a result line for each row in each matrix table. Do not collapse, skip, or shortcut steps even if a prior step suggests the system is healthy — partial reports hide real gaps (e.g., a reachable MCP server does not prove the plugin manifest exists).
+
 ### 1. Read the plugin matrix
 
-Read [`plugin-matrix.md`](plugin-matrix.md) — the source of truth for required plugins, minimum versions, and external tooling. All subsequent checks reference this file.
+Read [`plugin-matrix.md`](plugin-matrix.md) — the source of truth for required plugins, minimum versions, and external tooling. All subsequent checks reference this file. List every row you found from each table at the start of your run, so the user can see what's about to be probed.
 
 ### 2. Required plugins installed
 
@@ -78,7 +79,7 @@ Compare against the latest version in the marketplace totality was installed fro
 
 (For v0.1, if the marketplace lookup is not yet available, log "self-check skipped — marketplace lookup not implemented" and continue. Do not halt.)
 
-## Report format (standalone mode)
+## Report format (always emitted)
 
 ```
 totality doctor
@@ -103,6 +104,8 @@ Result: PASS (1 recommended plugin missing — non-blocking)
 
 ## Rules
 
+- **Always print the full report** — every required plugin, every recommended plugin, every external tool, and the self-check. No silent passes, ever. If a check was performed, the user sees the result.
+- **Run every check** — do not infer one check from another (e.g., MCP reachability does not satisfy the plugin manifest probe). Each row in the matrix gets its own probe and its own line.
 - **Halt on hard failures only** — required plugins, GitNexus MCP, stale index.
 - **Prompt on soft failures** — recommended plugins and self-update offer the user an explicit install/skip choice via `AskUserQuestion`. Never silently skip past missing recommendations.
 - **User can always opt out of soft failures** — if they pick skip, log it in the report and continue.
