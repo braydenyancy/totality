@@ -44,7 +44,19 @@ If any required plugin is missing or behind, **halt** — use `AskUserQuestion`:
 
 ### 3. Recommended plugins
 
-Same logic, but **warn** instead of halt. List what's missing in the report; do not block.
+For each plugin in the **Recommended plugins** table, run the same install + version probe used for required plugins. Collect the missing/outdated ones into a list.
+
+If the list is empty, continue silently to step 4.
+
+If any are missing or outdated, **prompt the user** — do not skip past it. Use `AskUserQuestion`:
+
+> "Recommended plugins missing or outdated: `<name1>`, `<name2>`, … . Want to install/update them before continuing?"
+> Options:
+> - "Install all — wait" — print every install/upgrade command in one block, then pause: *"Run those, then re-invoke `/totality` (or `/totality:doctor`) to re-check."* Halt.
+> - "Pick which to install" — for each missing plugin, ask a follow-up `AskUserQuestion` (Install / Skip). Print install commands only for the picks. Halt for the user to run them.
+> - "Skip all — continue without them" — log the skip, list what was skipped in the report, continue to step 4. **Non-blocking.**
+
+This is the only difference from required plugins: the user is allowed to opt out and proceed. They must still be offered the choice — never silently warn and continue.
 
 ### 4. External tooling
 
@@ -92,6 +104,7 @@ Result: PASS (1 recommended plugin missing — non-blocking)
 ## Rules
 
 - **Halt on hard failures only** — required plugins, GitNexus MCP, stale index.
-- **Warn on soft failures** — recommended plugins, self-update available.
-- **Always actionable** — every failure includes a copy-pasteable command.
+- **Prompt on soft failures** — recommended plugins and self-update offer the user an explicit install/skip choice via `AskUserQuestion`. Never silently skip past missing recommendations.
+- **User can always opt out of soft failures** — if they pick skip, log it in the report and continue.
+- **Always actionable** — every install/upgrade prompt includes a copy-pasteable command.
 - **Idempotent** — running doctor twice in a row produces the same report; running after the user fixes a problem reflects the fix.

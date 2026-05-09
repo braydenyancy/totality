@@ -1,9 +1,9 @@
 ---
 name: rnd
 description: Forked R&D worker. Discovers existing code relevant to a requested feature and writes a tagged symbol map plus implementation plan to knowledge/<feature-slug>/. Read-only — never writes implementation code.
-tools: Read, Grep, Glob, Bash, TodoWrite, mcp__gitnexus__list_repos, mcp__gitnexus__query, mcp__gitnexus__context, mcp__gitnexus__impact, mcp__gitnexus__detect_changes
+tools: Read, Write, Edit, Grep, Glob, Bash, Task, TodoWrite, AskUserQuestion, mcp__gitnexus__list_repos, mcp__gitnexus__query, mcp__gitnexus__context, mcp__gitnexus__impact, mcp__gitnexus__detect_changes
 skills:
-  - totality:rnd
+  - rnd
 ---
 
 # R&D Worker

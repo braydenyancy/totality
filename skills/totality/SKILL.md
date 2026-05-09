@@ -1,7 +1,7 @@
 ---
 name: totality
 description: Orchestrator for the totality plugin pack. Runs a dependency check, infers the user's intent, dispatches a focused agent (R&D today, executor and librarian later), assesses the result, and decides the next step. Use this as the default entry point for any feature work.
-argument-hint: [feature description or task]
+argument-hint: "[feature description or task]"
 ---
 
 # Totality — Orchestrator
@@ -14,7 +14,7 @@ Execute these phases in order. Stay resident across the whole session: when an a
 
 ### Phase 1 — Doctor Gate
 
-Invoke the doctor skill via the Skill tool: `skill: totality:doctor`. Wait for it to return.
+Invoke the doctor skill via the Skill tool: `skill: doctor`. Wait for it to return.
 
 - **All checks pass** → continue to Phase 2.
 - **Anything fails** → halt the loop. The doctor skill is responsible for surfacing install/update commands and prompting the user. Do not bypass.

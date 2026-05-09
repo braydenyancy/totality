@@ -16,17 +16,31 @@ v0.1 ships with one capability — **R&D** (codebase discovery + planning). Futu
 
 ## Install
 
-### Local development (this repo)
+One-liner (clones to `~/.local/share/totality`, symlinks skills/agents into `~/.claude/`, merges the SessionStart hook into `~/.claude/settings.json`):
 
 ```bash
-claude --plugin-dir /path/to/totality
+curl -fsSL https://raw.githubusercontent.com/braydenyancy/totality/main/install.sh | bash
 ```
 
-### Via marketplace (once published)
+Or from a local checkout:
 
 ```bash
+git clone https://github.com/braydenyancy/totality.git
+cd totality && ./install.sh
+```
+
+Update later: `~/.local/share/totality/install.sh --update`
+Uninstall:    `~/.local/share/totality/install.sh --uninstall`
+
+Override locations with `TOTALITY_DIR` (source repo) or `CLAUDE_HOME` (Claude config dir).
+
+Restart Claude Code after install. Requires `git` and `node` (Claude Code already needs node).
+
+### Via Claude Code plugin marketplace (alternative)
+
+```
 /plugin marketplace add braydenyancy/totality
-/plugin install totality
+/plugin install totality@totality
 ```
 
 ## Required dependencies
@@ -104,8 +118,14 @@ totality/
 │           └── plan.template.md
 ├── agents/
 │   └── rnd.md                      # forked R&D worker
+├── commands/
+│   ├── totality.md                 # /totality
+│   └── totality/
+│       ├── doctor.md               # /totality:doctor
+│       └── rnd.md                  # /totality:rnd
 ├── hooks/
 │   └── hooks.json                  # SessionStart nudge
+├── install.sh                      # symlink installer (script-based path)
 └── README.md
 ```
 
