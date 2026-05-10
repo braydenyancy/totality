@@ -120,6 +120,21 @@ console.log('  ✓ hooks merged into', settingsPath);
 JS
 }
 
+check_external_deps() {
+  # Probe external skills (not Claude Code plugins, but required by some flows).
+  # Source of truth: skills/doctor/plugin-matrix.md → "External skills" table.
+  local da_path="$CLAUDE_DIR/skills/devils-advocate/SKILL.md"
+  if [ ! -f "$da_path" ]; then
+    echo
+    echo "⚠ external dependency not installed: devils-advocate"
+    echo "  rnd will halt without it (mandatory pre-Phase-4 challenge)."
+    echo "  install with:"
+    echo "    npx degit notmanas/claude-code-skills/skills/devils-advocate $CLAUDE_DIR/skills/devils-advocate"
+  else
+    echo "  ✓ external skill devils-advocate present"
+  fi
+}
+
 remove_hooks() {
   [ -f "$SETTINGS" ] || return 0
   require node
@@ -155,6 +170,8 @@ main() {
       link_dir agents
       link_dir commands
       merge_hooks
+      echo "→ checking external deps"
+      check_external_deps
       echo "✓ updated — restart Claude Code to pick up changes"
       ;;
     --uninstall)
@@ -178,6 +195,8 @@ main() {
       link_dir commands
       echo "→ merging hooks"
       merge_hooks
+      echo "→ checking external deps"
+      check_external_deps
       echo
       echo "✓ totality installed"
       echo "  source: $SOURCE_DIR"

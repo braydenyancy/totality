@@ -10,7 +10,8 @@ v0.1 ships with one capability — **R&D** (codebase discovery + planning). Futu
 |---|---|
 | `/totality` | Orchestrator. Runs doctor, infers intent, dispatches the right agent, decides next step. |
 | `/totality:doctor` | Health check. Verifies required plugins, MCP tooling, and freshness. Halts on hard failures. |
-| `/totality:rnd` | R&D methodology. Used by the rnd agent; also user-invocable for power users who want to skip the orchestrator. |
+| `/totality:rnd` | R&D methodology. Used by the rnd agent; also user-invocable for power users who want to skip the orchestrator. Wired with a mandatory `devils-advocate` pass before plan write. |
+| `/totality:debrief` | Postmortem capture. Walks through a structured debrief of a totality miss (or surprising win) one question at a time, verifies each answer against the codebase, and writes a case study to `knowledge/feedback/<slug>.md`. Future rnd runs ingest these as prior-lessons constraints. |
 | `agents/rnd` | Forked worker that does discovery and writes `knowledge/<slug>/current.md` + `plan.md`. |
 | SessionStart hook | Surfaces in-progress features (anything in `knowledge/`) at the start of each session. |
 
@@ -53,6 +54,12 @@ Doctor will halt until these are installed:
   /plugin install gitnexus
   ```
 
+- **devils-advocate** — adversarial pass over the rnd discovery before it becomes a plan. Not a Claude Code plugin (no marketplace install), so we vendor it via `degit`:
+  ```
+  npx degit notmanas/claude-code-skills/skills/devils-advocate ~/.claude/skills/devils-advocate
+  ```
+  The `install.sh` script checks for this and prints the command if missing. rnd halts at invocation time without it.
+
 Recommended (warns but doesn't block):
 
 - `code-review`, `commit-commands`, `security-guidance`, `skill-creator` from the official Anthropic marketplace
@@ -66,80 +73,6 @@ See [`skills/doctor/plugin-matrix.md`](skills/doctor/plugin-matrix.md) for the s
 /totality                              # ask me what you want
 /totality add audio reactivity         # infer rnd, dispatch
 /totality:rnd add audio reactivity     # skip the orchestrator (power user)
+/totality:debrief audio-visual miss    # capture a postmortem case study
 /totality:doctor                       # health check
 ```
-
-Output lands at `knowledge/<feature-slug>/current.md` and `knowledge/<feature-slug>/plan.md` in your repo. The hook adds `knowledge/` to `.gitignore` automatically.
-
-## How it fits together
-
-```
-User → /totality
-         │
-         ▼
-   ┌─────────────────┐
-   │ Doctor gate     │  hard fail → halt with install commands
-   └────────┬────────┘
-            ▼
-   ┌─────────────────┐
-   │ Intent infer    │  from $ARGUMENTS or AskUserQuestion
-   └────────┬────────┘
-            ▼
-   ┌─────────────────┐
-   │ Dispatch agent  │  Task tool → agents/rnd (forked)
-   └────────┬────────┘
-            ▼
-   ┌─────────────────┐
-   │ Agent runs      │  loads totality:rnd skill, writes knowledge/<slug>/
-   └────────┬────────┘
-            ▼
-   ┌─────────────────┐
-   │ Assess + offer  │  next step, refine, or stop
-   │ next step       │
-   └─────────────────┘
-```
-
-## Repository layout
-
-```
-totality/
-├── .claude-plugin/plugin.json      # plugin manifest
-├── skills/
-│   ├── totality/SKILL.md           # orchestrator
-│   ├── doctor/
-│   │   ├── SKILL.md                # health check
-│   │   └── plugin-matrix.md        # required deps + min versions
-│   └── rnd/
-│       ├── SKILL.md                # R&D methodology
-│       ├── tag-format.md           # [PREFIX-NNN] tag rules
-│       ├── orientation-rubric.md   # "explain before asking"
-│       └── templates/
-│           ├── current.template.md
-│           └── plan.template.md
-├── agents/
-│   └── rnd.md                      # forked R&D worker
-├── commands/
-│   ├── totality.md                 # /totality
-│   └── totality/
-│       ├── doctor.md               # /totality:doctor
-│       └── rnd.md                  # /totality:rnd
-├── hooks/
-│   └── hooks.json                  # SessionStart nudge
-├── install.sh                      # symlink installer (script-based path)
-└── README.md
-```
-
-## Extending totality
-
-Adding a new capability (executor, librarian, etc.):
-
-1. Create `agents/<name>.md` — frontmatter sets tools and (optionally) preloaded skills.
-2. Optionally create `skills/<name>/SKILL.md` if there's reusable methodology.
-3. Add the agent to the registry table in `skills/totality/SKILL.md` and a branch in Phase 2's intent inference.
-4. Add any new dependencies to `skills/doctor/plugin-matrix.md`.
-
-Two-skill surface (`/totality`, `/totality:doctor`) stays stable. Capabilities are additive.
-
-## License
-
-MIT (see LICENSE — TODO add)
