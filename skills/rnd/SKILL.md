@@ -13,6 +13,20 @@ You are a developer exploring an unfamiliar codebase. Your job is to discover wh
 
 Do NOT write implementation code. Do NOT suggest fixes or refactors to discovered code. Your only outputs are `current.md` and `plan.md` in `knowledge/<feature-slug>/` at the repo root.
 
+## Dependency check (run before Phase 1)
+
+This skill requires `devils-advocate` for its mandatory pre-plan challenge step in Phase 3. Verify it exists at `~/.claude/skills/devils-advocate/SKILL.md` before doing anything else.
+
+If missing, halt with:
+
+> *"rnd requires the `devils-advocate` skill (mandatory pre-plan challenge before Phase 4). Install with:*
+>
+> *`npx degit notmanas/claude-code-skills/skills/devils-advocate ~/.claude/skills/devils-advocate`*
+>
+> *Then re-invoke `/totality:rnd` (or `/totality`)."*
+
+Do not offer a "skip and continue" option. The whole point of rnd is to produce a plan rigorous enough for an executor agent to act on; skipping the adversarial pass is exactly the failure mode that produced the audio-visual-mapping miss.
+
 ## Self-Narration
 
 Between tool calls, briefly say what you just found and what you're doing next, in plain language. A non-developer should be able to follow along. One sentence per step. Example: *"GitNexus found 14 symbols mentioning 'audio'. Reading the top 3 files now to understand how they connect."*
@@ -37,6 +51,16 @@ Skim repo-level context to ground later questions. Read what exists; skip silent
 - `docs/` — recursively list the tree; read any file whose path or name relates to the feature description (keywords, neighboring concepts, prior feature specs)
 
 Output 2–3 sentences summarizing what you learned that's relevant to the requested feature.
+
+### Prior-lessons gate (mandatory)
+
+Before any discovery, read `knowledge/feedback/` if it exists. List every case study, then read each one whose slug, vocabulary, or affected systems plausibly relate to this feature. For each applicable lesson:
+
+- Treat its **guardrail** as a constraint your work must satisfy or explicitly accept (and explain why you're declining).
+- Treat its **failure modes** as known traps you actively look for as you discover.
+- If a prior debrief flagged a producer-survey gap on this exact feature-slug, treat the producer survey (Phase 3a-bis below) as non-optional.
+
+State to the user up front: *"Found N prior lessons in `knowledge/feedback/` that apply: \[list one-line headlines\]. I'll satisfy each unless I flag otherwise."*
 
 If GitNexus wasn't pre-verified by totality, run `mcp__gitnexus__list_repos` now. If unavailable, tell the user *"GitNexus isn't configured. Falling back to file search and grep — discovery will be less thorough."* and continue in fallback mode.
 
@@ -96,6 +120,38 @@ Follow connections. If a symbol consumes another, query that one too.
 
 Without GitNexus, dispatch the Explore subagent with the feature description and ask it to identify candidate files via grep + naming conventions. Then read each candidate file. Less precise — be more generous with reading and rely more heavily on user questions to disambiguate.
 
+### 3a-bis. Vocabulary grep (mandatory, before tagging anything)
+
+Pull the primary nouns from the feature description AND adjacent nouns (synonyms, the domain's neighboring concepts). Grep the source tree for each. Surface every match to the user as a triage list:
+
+> *"Before I tag anything: greppin for `<noun1>`, `<noun2>`, `<noun3>` turned up these files I haven't looked at yet — \[list\]. Anything in here you already think of as 'the X system' for this feature?"*
+
+This is a 15-second triage step. It exists to catch sibling-feature redundancy — building a Random palette next to an already-shipped palette generator, etc. Skipping it is the most expensive failure mode rnd has historically had.
+
+### 3a-ter. Producer survey (mandatory, for every consumer-side symbol you tag)
+
+For every symbol you're about to tag that consumes data from somewhere else, walk upstream:
+
+- GitNexus mode: `gitnexus_impact({target: "<symbol>", direction: "upstream"})` and follow until you hit raw input (raw audio, raw level JSON, user typing) OR another system the user authors (a settings panel, a generator, an editor).
+- Fallback mode: grep for who writes / produces the data type the symbol consumes.
+
+Tag the producers, not just the consumers. If the producer is an authoring surface the user already interacts with (settings panel, editor, generator), this is a strong "extension, not build" signal — see 3a-quater.
+
+### 3a-quater. Extension-vs-build check (mandatory, every loop pass)
+
+After 3a-bis and 3a-ter, before asking a scoping question or proposing a plan, evaluate: does this feature look like an **extension** of something that already exists, or a **new build**?
+
+Signals it's an extension:
+- Vocabulary grep hit an existing system with overlapping responsibility
+- Producer survey found an authoring UI the user already interacts with for this domain
+- The user has, in conversation, referenced "the existing X" or "the pre-existing X" (this is a hard trigger — survey before continuing)
+
+If any signal fires, surface to the user explicitly:
+
+> *"This looks like an extension of \[existing system X at file:line\] — that system already does \[summary\]. Should we proceed as an extension of X, or as a new system that runs alongside it? I'm asking because the answer changes nearly every downstream choice — where new code lives, what types it uses, whether the existing UI grows or a new one appears."*
+
+Do not skip this question on the assumption "the user said new feature, so it's new." The whole point of this check is that the user didn't always know X existed when they framed the feature.
+
 ### 3b. Read the Code
 
 For each candidate file location, dispatch the Explore subagent to read it. Do not rely on summaries alone — the actual code is the source of truth.
@@ -115,6 +171,23 @@ Rules:
 - Wait for the answer before continuing
 - Batch related questions only when they're independent (no question depends on another's answer)
 
+### 3c-DA. Devil's-advocate offer (after every answered question)
+
+After the user answers any question in 3c, do not immediately ask the next one. Run the discovery loop on whatever the answer revealed (re-grep, re-query GitNexus, follow new producers, etc.), then surface a single `AskUserQuestion`:
+
+> *"Picked up \[one-line summary of what the answer + follow-up discovery surfaced\]. Want me to invoke `devils-advocate` on what we know so far, or move to the next question?"*
+> Options:
+> - "Next question" (default — continue the loop)
+> - "Invoke devils-advocate now"
+
+If the user picks "invoke now," dispatch `Skill: devils-advocate` with the current state of `current.md` (tagged symbols + open questions + any draft plan-shape forming in your head) and this framing:
+
+> *"This is in-progress R&D for feature `<slug>`. The user has answered N scoping questions. Challenge what's been discovered so far: am I tagging the right side of the data flow (consumer vs producer)? Is there a sibling system the vocabulary grep should have caught but didn't? Is the framing 'new system' when 'extension of X' would be more honest? Use the rnd-specific failure modes from `knowledge/feedback/` if any apply."*
+
+When DA returns, surface its concerns. The user picks which to fold in — typically a DA concern translates to "go re-discover this area" or "ask the user this specific scoping question next." Then return to the regular loop.
+
+This offer fires after **every** answered 3c question, no exceptions. The user can decline as many times as they want. The mandatory pass is at the loop exit (3e-DA below).
+
 ### 3d. Tag Findings in current.md
 
 After reading a file and confirming a symbol's behavior, append an entry to `current.md` following the format in [`tag-format.md`](tag-format.md). Tag numbers increment as you go: `<PREFIX>-001`, `<PREFIX>-002`, etc. **Only tag after reading the actual file.**
@@ -125,6 +198,39 @@ Stop when:
 - All symbols related to the feature are mapped
 - All ambiguities are resolved (asked or written into Gaps)
 - The user's described feature can be planned end-to-end
+
+### 3e-DA. Mandatory devil's-advocate pass before exiting Phase 3
+
+Before moving to Phase 4 (write plan), check: did `devils-advocate` run at least once during this session?
+
+**If yes** — proceed to Phase 4 directly.
+
+**If no** — the loop cannot exit without one DA pass. Surface to the user:
+
+> *"Discovery looks complete — N symbols tagged, no open questions left. Devil's-advocate hasn't been invoked yet this session. Options:"*
+> - "Run devils-advocate and move to plan" (default)
+> - "Keep questioning — I'm not done thinking"
+
+If the user picks "keep questioning," return to 3c with no DA invocation (the per-question offer in 3c-DA stays active as before). The exit gate fires again the next time the loop tries to move to Phase 4.
+
+If the user picks "run and move to plan," dispatch `Skill: devils-advocate` with the full draft of `current.md` and this framing:
+
+> *"This is the complete R&D output for feature `<slug>`, about to become a plan an executor agent will follow. Challenge it: are there consumer-side tags with no corresponding producer tag? Is any `[TAG]` describing a system that's actually a thin wrapper over an existing system I should have tagged instead? Will the plan that flows from this map produce a parallel system or an extension? Pre-mortem: this plan shipped, the executor built it, and it duplicated existing functionality — what was on this map that should have flagged that?"*
+
+Decision based on verdict:
+
+- **Ship it** — proceed to Phase 4.
+- **Ship with changes** — list DA's recommended changes; ask `AskUserQuestion`:
+  > "Devil's-advocate flagged N changes. Apply which?"
+  > Multi-select per concern, plus "Apply all" and "Apply none — proceed to plan as-is."
+  Apply the picks (typically: re-discover an area, add missing producer tags, reframe a tag from "new" to "extends"), then re-run the exit gate (which is now satisfied — DA has run — so this becomes a one-question "ready for plan?" confirmation).
+- **Rethink this** — surface DA's reasoning. Ask:
+  > "DA says the discovery has a fundamental issue: \[summary\]. Options:"
+  > - "Loop back to 3a — re-discover with DA's framing in mind"
+  > - "Override DA — proceed to plan with a `## Devil's-advocate dissent` section in the plan"
+  > - "Abort — don't write the plan"
+
+The override-and-record mechanism: if the user disagrees with "rethink," they can proceed, but `plan.md` gains a `## Devil's-advocate dissent` section showing what DA challenged and what the user kept anyway. Future readers (including the executor agent) see the dissent and can judge.
 
 ---
 
@@ -147,6 +253,11 @@ If invoked through totality, return control to the orchestrator with this summar
 ## Key Rules
 
 - **Generic and feature-agnostic** — never bake in any specific feature's terminology
+- **Prior lessons are constraints** — read `knowledge/feedback/` before discovering, satisfy or explicitly accept each applicable lesson
+- **Vocabulary grep before tagging** — primary + adjacent nouns; surface the match list to the user
+- **Survey producers, not just consumers** — every consumer-side tag triggers an upstream walk
+- **Extension-vs-build check every pass** — never assume "new feature framing" means "new system needed"
+- **Devil's-advocate is mandatory before Phase 4** — and offered after every answered question. Override allowed but recorded as dissent in `plan.md`.
 - **Read the code** — GitNexus locates; you read before tagging
 - **Reference, don't copy** — file:line + `[TAG]` over inline code; quote a snippet only when the snippet IS the explanation
 - **Plan only what's discovered** — every plan step cites a `current.md` tag

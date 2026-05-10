@@ -22,6 +22,16 @@ Doctor warns if missing but does not halt. Useful for downstream handoffs.
 | skill-creator | latest | claude-plugins-official marketplace | Useful for extending totality itself. |
 | superpowers | latest | (TBD — confirm source) | `/superpowers:brainstorming` is a documented R&D handoff target. |
 
+## External skills (vendored from non-plugin repos)
+
+Skills that aren't published as Claude Code plugins but are required by totality flows. Doctor checks for them at user-global skill paths and surfaces a `degit` install command if missing.
+
+| Skill | Required by | Install location | Install command | Why |
+|---|---|---|---|---|
+| devils-advocate | rnd (mandatory pre-Phase-4 challenge; offered after every answered scoping question) | `~/.claude/skills/devils-advocate/` | `npx degit notmanas/claude-code-skills/skills/devils-advocate ~/.claude/skills/devils-advocate` | Adversarial pass over the discovered symbol map before it becomes a plan. Catches consumer-without-producer tags, missed sibling systems, and "new system" framings that should be "extension of X". |
+
+Treat external skills as **hard deps for the flows that require them** but **soft deps for the rest of totality**. Doctor warns at pre-flight if missing; the dependent skill (e.g., rnd) halts at invocation time with the install command.
+
 ## External tooling
 
 Not plugins, but doctor verifies these exist on PATH or as MCP servers.

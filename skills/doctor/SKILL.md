@@ -59,6 +59,15 @@ If any are missing or outdated, **prompt the user** — do not skip past it. Use
 
 This is the only difference from required plugins: the user is allowed to opt out and proceed. They must still be offered the choice — never silently warn and continue.
 
+### 3.5. External skills
+
+For each skill in the **External skills** table:
+
+- Check the install location (e.g., `~/.claude/skills/<name>/SKILL.md` exists).
+- Emit a report line: ✓ if present, ✗ with the `degit` install command from the matrix if missing.
+
+Doctor always treats external skills as **non-blocking warnings** at the pre-flight stage. The skills that actually depend on them (e.g., debrief depends on devils-advocate) are responsible for halting at invocation time if their dependency is missing — that keeps doctor stateless and avoids the "what flow am I running?" coupling.
+
 ### 4. External tooling
 
 For each entry in **External tooling**:
@@ -91,6 +100,9 @@ Recommended plugins:
   ✓ code-review 1.2.0
   ✗ superpowers — not installed
     install: /plugin marketplace add <source> && /plugin install superpowers
+
+External skills:
+  ✓ devils-advocate (~/.claude/skills/devils-advocate/SKILL.md)
 
 External tooling:
   ✓ GitNexus MCP server reachable
